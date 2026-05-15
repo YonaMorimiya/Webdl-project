@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>API Status — LiXydl</title>
+  <meta name="description" content="Real-time API status monitoring for LiXydl. Check if TikTok, Instagram, YouTube, Facebook, Pinterest and other platform downloaders are operational.">
+  <meta name="robots" content="noindex, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="API Status — LiXydl">
+  <meta property="og:description" content="Real-time health monitoring for all LiXydl supported platforms.">
+  <meta property="og:url" content="https://LiXydl.app/status">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="bg-image" aria-hidden="true"></div>
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+<div class="bg-noise" aria-hidden="true"></div>
+
+<nav class="nav-bar">
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6M4 19h16"/></svg>
+    </div>
+    <span class="nav-logo-text">Vy<span>Down</span></span>
+  </a>
+  <a href="/" class="back-btn">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </a>
+</nav>
+
+<main class="container">
+
+  <section class="status-hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Live Monitoring
+    </div>
+    <h1 class="hero-title">API Status</h1>
+    <p class="hero-sub">Real-time health check for all supported platforms. Auto-refreshes every 60 seconds.</p>
+  </section>
+
+  <div class="status-summary">
+    <div class="summary-card">
+      <div class="summary-num" id="totalNum" style="color:var(--text-primary)">—</div>
+      <div class="summary-label">Total</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-num" id="onlineNum" style="color:var(--ios-green)">—</div>
+      <div class="summary-label">Online</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-num" id="offlineNum" style="color:var(--ios-red)">—</div>
+      <div class="summary-label">Down</div>
+    </div>
+  </div>
+
+  <div class="incident-section" id="incidentSection"></div>
+
+  <div class="status-list" id="statusList"></div>
+
+  <button class="refresh-btn" id="refreshBtn">
+    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    Refresh All
+  </button>
+  <p class="last-check" id="lastCheck"></p>
+
+  <footer class="footer">
+    <p class="footer-text">LiXydl API Status &bull; <a href="/">Back to Downloader</a></p>
+  </footer>
+
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const META = {
+    tiktok:     { name:'TikTok',       g:'linear-gradient(135deg,#111,#333)',           icon:'<svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>' },
+    tiktokslide:{ name:'TikTok Slide', g:'linear-gradient(135deg,#111,#2a2a2a)',         icon:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' },
+    instagram:  { name:'Instagram',    g:'linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)', icon:'<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>' },
+    youtube:    { name:'YouTube',      g:'linear-gradient(135deg,#FF0000,#CC0000)',      icon:'<svg viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" style="stroke:none;fill:white"/></svg>' },
+    facebook:   { name:'Facebook',     g:'linear-gradient(135deg,#1877F2,#0C5DC7)',     icon:'<svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>' },
+    pinterest:  { name:'Pinterest',    g:'linear-gradient(135deg,#E60023,#AD081B)',     icon:'<svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>' },
+    threads:    { name:'Threads',      g:'linear-gradient(135deg,#000,#222)',            icon:'<svg viewBox="0 0 24 24"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.473 12.01v-.017c.027-3.579.877-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.018 5.1.87 6.792 2.475 1.426 1.358 2.248 3.376 2.441 6.001l-2.979.024c-.195-1.909-.79-3.244-1.78-4.172-1.187-1.109-2.8-1.667-4.462-1.678-2.642.018-4.613.845-5.838 2.453-1.001 1.328-1.564 3.26-1.578 5.897.014 2.636.577 4.568 1.578 5.896 1.225 1.608 3.196 2.435 5.838 2.453 1.662-.011 3.275-.569 4.462-1.678.992-.928 1.587-2.263 1.78-4.172l2.979.024c-.193 2.625-1.015 4.643-2.441 6.001C17.28 23.131 14.932 23.982 12.186 24z"/></svg>' },
+    capcut:     { name:'CapCut',       g:'linear-gradient(135deg,#1a1a1a,#333)',         icon:'<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>' },
+    cocofun:    { name:'CocoFun',      g:'linear-gradient(135deg,#FF6600,#FF8C00)',      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" style="fill:white;stroke:none"/></svg>' },
+    snackvideo: { name:'SnackVideo',   g:'linear-gradient(135deg,#FF6B00,#FF8C42)',      icon:'<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>' },
+    spotify:    { name:'Spotify',      g:'linear-gradient(135deg,#1DB954,#158a3e)',      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 15.5c2.667-1.333 5.333-1.333 8 0M7 12c3.333-1.667 6.667-1.667 10 0M8 8.5c2.667-1.333 5.333-1.333 8 0"/></svg>' },
+    gdrive:     { name:'Google Drive', g:'linear-gradient(135deg,#4285F4,#34A853)',      icon:'<svg viewBox="0 0 24 24"><path d="M7.71 3.5L1.15 15l3.43 5.5h15.42L23.42 15 16.29 3.5z"/><path d="M1.15 15L7.71 3.5h8.58L9.71 15z" opacity=".4"/><path d="M16.29 3.5l6.56 11.5H9.71z" opacity=".4"/></svg>' },
+  };
+
+  const BADGE_ICON = {
+    online:   '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+    offline:  '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    error:    '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    checking: '<svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  };
+  const BADGE_LABEL = { online:'Online', offline:'Offline', error:'Error', checking:'Checking' };
+
+  let busy = false;
+
+  function e(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function toast(msg, type='info') {
+    const icons = {
+      success:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+      error:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/></svg>',
+      info:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/></svg>',
+    };
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = (icons[type] || icons.info) + `<span>${e(msg)}</span>`;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => { t.classList.add('removing'); setTimeout(() => t.remove(), 280); }, 2800);
+  }
+
+  function latencyClass(ms) {
+    if (ms < 1000) return 'fast';
+    if (ms < 3000) return 'medium';
+    return 'slow';
+  }
+
+  function showSkeletons() {
+    const list = document.getElementById('statusList');
+    if (!list.querySelector('.status-item')) {
+      list.innerHTML = Object.keys(META).map(() =>
+        `<div class="status-skeleton"></div>`
+      ).join('');
+      ['totalNum','onlineNum','offlineNum'].forEach(id => { document.getElementById(id).textContent = '—'; });
+    }
+  }
+
+  function renderIncidents(results) {
+    const sec = document.getElementById('incidentSection');
+    const offline = results.filter(r => r.status === 'offline');
+    const errored = results.filter(r => r.status === 'error');
+    const bad = [...offline, ...errored];
+    const now = new Date().toLocaleString([], { dateStyle:'medium', timeStyle:'short' });
+
+    if (bad.length === 0) {
+      sec.innerHTML = `
+        <div class="incident-all-ok">
+          <div class="incident-all-ok-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="incident-all-ok-title">All Systems Operational</div>
+            <div class="incident-all-ok-sub">All ${results.length} platforms are running normally. No incidents detected.</div>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const isCritical = offline.length > 0;
+    const affectedNames = bad.map(r => r.name);
+    const offlineNames = offline.map(r => r.name);
+    const errorNames = errored.map(r => r.name);
+
+    let bodyText = '';
+    if (offlineNames.length && errorNames.length) {
+      bodyText = `${offlineNames.join(', ')} ${offlineNames.length === 1 ? 'is' : 'are'} currently unreachable, and ${errorNames.join(', ')} ${errorNames.length === 1 ? 'is' : 'are'} returning unexpected responses. Downloader functionality for these services may be unavailable or degraded. Our team is monitoring the situation.`;
+    } else if (offlineNames.length) {
+      bodyText = `${offlineNames.join(', ')} ${offlineNames.length === 1 ? 'is' : 'are'} currently unreachable. Downloads from ${offlineNames.length === 1 ? 'this platform' : 'these platforms'} may fail until the service is restored. We are monitoring the situation.`;
+    } else {
+      bodyText = `${errorNames.join(', ')} ${errorNames.length === 1 ? 'is' : 'are'} returning unexpected responses. Some downloads may not work correctly. We are investigating the issue.`;
+    }
+
+    const chipsHtml = [
+      ...offline.map(r => `<span class="incident-chip offline">${e(r.name)}</span>`),
+      ...errored.map(r => `<span class="incident-chip">${e(r.name)}</span>`),
+    ].join('');
+
+    const incidentText = `[VDown Status — ${now}]\n⚠️ Service Disruption Detected\n\nAffected: ${affectedNames.join(', ')}\n\n${bodyText}\n\nMonitor: ${location.origin}/status`;
+
+    sec.innerHTML = `
+      <div class="incident-card${isCritical ? ' critical' : ''}">
+        <div class="incident-card-header">
+          <div class="incident-card-dot"></div>
+          <div class="incident-card-title">${isCritical ? 'Service Disruption Detected' : 'Degraded Performance'}</div>
+        </div>
+        <div class="incident-card-text">${e(bodyText)}</div>
+        <div class="incident-platforms">${chipsHtml}</div>
+        <button class="incident-copy-btn" id="incidentCopyBtn">
+          <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/></svg>
+          Copy Incident Text
+        </button>
+        <div class="incident-card-time">Detected at ${e(now)}</div>
+      </div>`;
+
+    document.getElementById('incidentCopyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(incidentText).then(() => {
+        toast('Incident text copied!', 'success');
+      }).catch(() => {
+        toast('Copy failed — try manually', 'error');
+      });
+    });
+  }
+
+  function renderResults(results) {
+    document.getElementById('totalNum').textContent   = results.length;
+    document.getElementById('onlineNum').textContent  = results.filter(r => r.status === 'online').length;
+    document.getElementById('offlineNum').textContent = results.filter(r => r.status !== 'online').length;
+
+    renderIncidents(results);
+
+    const list = document.getElementById('statusList');
+    list.innerHTML = results.map(item => {
+      const meta = META[item.platform] || { name: item.name, g:'#333', icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>' };
+      const st = item.status;
+      const latClass = latencyClass(item.latency);
+      return `
+        <div class="status-item">
+          <div class="status-item-icon" style="background:${meta.g}">${meta.icon}</div>
+          <div class="status-item-info">
+            <div class="status-item-name">${e(item.name)}</div>
+            <div class="status-item-msg">${e(item.message)}</div>
+          </div>
+          <div class="status-item-right">
+            <div class="status-badge ${st}">
+              ${BADGE_ICON[st] || BADGE_ICON.checking}
+              ${BADGE_LABEL[st] || st}
+            </div>
+            ${item.latency ? `<span class="status-latency ${latClass}">${item.latency}ms</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function checkStatus() {
+    if (busy) return;
+    busy = true;
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    showSkeletons();
+
+    try {
+      const res  = await fetch('/api/status');
+      const json = await res.json();
+      if (json.success) {
+        renderResults(json.results);
+        saveCache(json.results, json.timestamp);
+      } else throw new Error('Bad response');
+    } catch {
+      toast('Could not reach status endpoint', 'error');
+      document.getElementById('statusList').innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:14px">Failed to load. Tap Refresh to retry.</div>`;
+    } finally {
+      busy = false;
+      btn.classList.remove('spinning');
+      btn.disabled = false;
+      document.getElementById('lastCheck').textContent =
+        'Last checked: ' + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    checkStatus();
+    toast('Checking all APIs…', 'info');
+  });
+
+  const CACHE_KEY = 'vydown_status_v1';
+
+  function loadCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { results, ts } = JSON.parse(raw);
+      if (Date.now() - ts > 10 * 60 * 1000) return null;
+      return { results, ts };
+    } catch { return null; }
+  }
+
+  function saveCache(results, ts) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ results, ts })); } catch {}
+  }
+
+  const cached = loadCache();
+  if (cached) {
+    renderResults(cached.results);
+    document.getElementById('lastCheck').textContent =
+      'Last checked: ' + new Date(cached.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' }) + ' (cached)';
+  }
+
+  checkStatus();
+  setInterval(checkStatus, 60000);
+})();
+</script>
+</body>
+</html>
